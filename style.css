@@ -1,0 +1,558 @@
+:root {
+    --bg-color: #F0F4F8;
+    --primary-blue: #1E3A8A;
+    --accent-cyan: #06B6D4;
+    --card-bg: #FFFFFF;
+    --text-main: #1F2937;
+    --text-sub: #6B7280;
+    --border-color: #E5E7EB;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    padding-bottom: 80px;
+}
+
+header {
+    background-color: var(--primary-blue);
+    color: white;
+    padding: 20px;
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-bottom: 4px solid #152C68;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* =========================================
+   チームタブのデザイン
+   ========================================= */
+.team-tabs-wrapper {
+    background-color: var(--primary-blue);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    /* ヘッダーとの境界線をなくして一体化させる */
+    margin-top: -4px; 
+    border-top: 1px solid #2B4C9B;
+}
+
+.team-tabs {
+    display: flex;
+    overflow-x: auto; /* 横スクロール可能にする */
+    padding: 0 10px;
+    /* スクロールバーを見えなくする（スマホアプリ風） */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.team-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.team-tab {
+    color: rgba(255, 255, 255, 0.6);
+    padding: 12px 16px;
+    white-space: nowrap;
+    font-weight: bold;
+    font-size: 0.95rem;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    /* 掴めることを示すカーソルに変更 */
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* 掴んでいる時のカーソル */
+.team-tab:active {
+    cursor: grabbing;
+}
+
+/* 選択中のタブ */
+.team-tab.active {
+    color: #22D3EE; /* 蛍光シアン */
+    border-bottom-color: #22D3EE;
+}
+
+/* タブをドラッグして浮いている時の見た目（ヘッダーに馴染むように半透明にする） */
+.team-tab-ghost {
+    opacity: 0.3;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+/* チーム追加ボタン（タブの右端） */
+.add-team-btn {
+    color: white;
+    padding: 12px 16px;
+    white-space: nowrap;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.95rem;
+    opacity: 0.8;
+}
+
+.add-team-btn:hover {
+    opacity: 1;
+}
+
+
+
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.btn {
+    background-color: var(--accent-cyan);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    padding: 16px 24px;
+    font-size: 1rem;
+    font-weight: bold;
+    width: 100%;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #0891B2;
+    transition: transform 0.1s, box-shadow 0.1s;
+    margin-bottom: 20px;
+}
+
+.btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 #0891B2;
+}
+
+.btn-primary {
+    background-color: var(--primary-blue);
+    box-shadow: 0 4px 0 #152C68;
+}
+
+.btn-primary:active {
+    box-shadow: 0 0 0 #152C68;
+}
+
+#addPlayerForm {
+    display: none;
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 20px;
+    border: 2px solid var(--border-color);
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: var(--text-sub);
+}
+
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 2px solid var(--border-color);
+    font-size: 1rem;
+    background-color: #F9FAFB;
+}
+
+.form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+    background-color: #FFFFFF;
+}
+
+/* =========================================
+   カードUI
+   ========================================= */
+.player-card {
+    background-color: var(--card-bg);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 2px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.2s, border-color 0.2s;
+    /* ドラッグできることを示すカーソル */
+    cursor: grab;
+    /* スマホで長押しした時にテキストが選択されてしまうのを防ぐ */
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.player-card:hover {
+    border-color: var(--accent-cyan);
+}
+
+.player-card:active {
+    cursor: grabbing; /* 掴んでいる時のカーソル */
+}
+
+/* ドラッグして浮いている時のカードの見た目 */
+.sortable-ghost {
+    opacity: 0.4; /* 半透明にする */
+    background-color: #E0F2FE; /* 薄い青色に発光させる */
+    border: 2px dashed var(--primary-blue); /* 点線にする */
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    border-bottom: 2px solid var(--bg-color);
+    padding-bottom: 10px;
+    gap: 12px; /* 名前とポジションの間に少し隙間を作ります */
+}
+
+.player-name {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: var(--primary-blue);
+}
+
+/* ポジション表示を色付きバッジにする */
+.player-pos {
+    /* 背景色はJSで動的に設定されます */
+    color: white; /* 文字は白 */
+    padding: 4px 8px;
+    border-radius: 4px; /* 角丸を少し小さく */
+    font-size: 0.9rem;
+    font-weight: 900; /* より太く */
+    display: inline-block; /* 幅を文字数に合わせる */
+    min-width: 36px; /* 最小幅を確保 */
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* 少し立体感 */
+}
+
+/* フォームのセレクトボックスのスタイル調整 */
+#pPos {
+    font-weight: bold;
+    /* 選択後の色はJSで動的に変わります */
+}
+
+/* PCブラウザ向け: 選択肢に色を付ける */
+#pPos option {
+    color: white;
+    font-weight: bold;
+    padding: 8px;
+}
+
+.skill-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.tag {
+    background-color: #E0F2FE;
+    color: #0369A1;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--card-bg);
+    display: flex;
+    justify-content: space-around;
+    padding: 15px 0;
+    border-top: 2px solid var(--border-color);
+}
+
+.nav-item {
+    color: var(--text-sub);
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+}
+
+.nav-item.active {
+    color: var(--accent-cyan);
+}
+
+/* =========================================
+   カスタムセレクトボックスのデザイン
+   ========================================= */
+.custom-select-wrapper {
+    position: relative;
+    user-select: none;
+    width: 100%;
+}
+
+/* 普段見えているボタン部分 */
+.custom-select-trigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-radius: 12px;
+    border: 2px solid var(--border-color);
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: bold;
+    color: white; /* 選択後はJSで白になります */
+    transition: all 0.2s;
+    background-color: #F9FAFB; /* 初期背景色 */
+}
+
+/* メニューが開いている時 */
+.custom-select-wrapper.open .custom-select-trigger {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-color: var(--accent-cyan);
+}
+
+.custom-select-trigger .arrow {
+    font-size: 0.8rem;
+    transition: transform 0.2s;
+}
+
+.custom-select-wrapper.open .arrow {
+    transform: rotate(180deg);
+}
+
+/* ドロップダウンのリスト全体 */
+.custom-options {
+    position: absolute;
+    display: none;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: #fff;
+    border: 2px solid var(--accent-cyan);
+    border-top: none;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    z-index: 10;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.custom-select-wrapper.open .custom-options {
+    display: block;
+}
+
+/* リストの中の各ポジション項目 */
+.custom-option {
+    padding: 10px 12px;
+    cursor: pointer;
+    font-weight: bold;
+    color: white;
+    transition: all 0.1s;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+/* カーソルを合わせた時のわかりやすいデザイン*/
+.custom-option:hover {
+    filter: brightness(1.2); /* 色を少し明るくしてハイライト */
+    padding-left: 20px; /* 文字を少し右にずらして動きをつける */
+    box-shadow: inset 6px 0 0 #FFFFFF; /* 左端に白い太線を出す */
+}
+
+/* =========================================
+   ポジション適性マップのデザイン（入力用）
+   ========================================= */
+.aptitude-palette {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.palette-btn {
+    flex: 1;
+    text-align: center;
+    padding: 8px 0;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.palette-btn.selected {
+    border-color: var(--primary-blue);
+    transform: scale(1.05);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+.apt-red { background-color: #EF4444; }
+.apt-orange { background-color: #F97316; }
+.apt-yellow { background-color: #EAB308; }
+.apt-none { background-color: #374151; color: #9CA3AF; }
+
+/* ピッチ全体（入力用） */
+.pitch-grid {
+    display: grid;
+    /* 全体の横幅を4等分（4列）にする */
+    grid-template-columns: repeat(4, 1fr); 
+    grid-template-rows: repeat(5, minmax(0, 1fr)); 
+    /* 中央のポジション（CF, AM等）を2マス分割り当てる */
+    grid-template-areas:
+        "LW CF CF RW"
+        "LM AM AM RM"
+        "LM DM DM RM"
+        "LB CB CB RB"
+        ".  GK GK . ";
+    gap: 4px;
+    background-color: #111827;
+    padding: 12px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 260px;
+    height: 280px; 
+    margin: 0 auto;
+}
+
+/* ピッチのマス目 */
+.pitch-cell {
+    background-color: #374151;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: rgba(255,255,255,0.4);
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.1s;
+    /* 前回あった min-height は削除（親の固定で制御するため不要） */
+}
+
+.pitch-cell:active {
+    transform: scale(0.95);
+}
+
+/* マス目の色状態 */
+.pitch-cell[data-apt="red"], .mini-cell[data-apt="red"] { background-color: #EF4444; color: white; }
+.pitch-cell[data-apt="orange"], .mini-cell[data-apt="orange"] { background-color: #F97316; color: white; }
+.pitch-cell[data-apt="yellow"], .mini-cell[data-apt="yellow"] { background-color: #EAB308; color: white; }
+
+/* =========================================
+   カード上のレイアウト調整とミニマップ
+   ========================================= */
+.card-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-top: 10px;
+    gap: 15px; /* ★追加: 左のテキストと右のマップがくっつかないように隙間を作る */
+}
+
+.mini-pitch {
+    display: grid;
+    /* ミニマップの横幅も4等分にする */
+    grid-template-columns: repeat(4, 1fr); 
+    grid-template-rows: repeat(5, minmax(0, 1fr)); 
+    /* ミニマップも中央を2マス分にする */
+    grid-template-areas:
+        "LW CF CF RW"
+        "LM AM AM RM"
+        "LM DM DM RM"
+        "LB CB CB RB"
+        ".  GK GK . ";
+    gap: 2px;
+    background-color: #111827;
+    padding: 4px;
+    border-radius: 6px;
+    width: 70px;
+    height: 90px;
+    flex-shrink: 0;
+}
+
+.mini-cell {
+    background-color: #374151;
+    border-radius: 2px;
+    /* ★★★ここが最大の原因でした！ width: 100%; height: 100%; を削除します ★★★ */
+    /* CSS Gridはデフォルトで枠いっぱいに伸びるので、サイズ指定は不要（バグの元）です */
+}
+
+[data-pos="LW"] { grid-area: LW; }
+[data-pos="CF"] { grid-area: CF; }
+[data-pos="RW"] { grid-area: RW; }
+[data-pos="LM"] { grid-area: LM; }
+[data-pos="AM"] { grid-area: AM; }
+[data-pos="RM"] { grid-area: RM; }
+[data-pos="DM"] { grid-area: DM; }
+[data-pos="LB"] { grid-area: LB; }
+[data-pos="CB"] { grid-area: CB; }
+[data-pos="RB"] { grid-area: RB; }
+[data-pos="GK"] { grid-area: GK; }
+
+/* =========================================
+   成長フェーズのデザイン
+   ========================================= */
+.phase-group {
+    display: flex;
+    flex-wrap: wrap; /* スマホ画面で狭い場合は自動で2段に折り返す */
+    gap: 8px;
+    margin-bottom: 5px;
+}
+
+.phase-btn {
+    flex: 1;
+    min-width: calc(50% - 4px); /* スマホでは2列×2行になるように設定 */
+    text-align: center;
+    padding: 10px 0;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: var(--text-sub);
+    background-color: #F9FAFB;
+    border: 2px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+@media (min-width: 480px) {
+    .phase-btn {
+        min-width: 0; /* PCなどの広い画面では横一列に並ぶ */
+    }
+}
+
+/* 選択された時のデザイン */
+.phase-btn.selected {
+    background-color: #083344; /* 深いサイバーブルー */
+    color: #22D3EE; /* 蛍光シアン */
+    border-color: #22D3EE;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+/* カード上の成長フェーズ表示バッジ */
+.player-phase {
+    display: inline-block;
+    background-color: #111827; /* ダーク背景 */
+    color: #22D3EE; /* 蛍光シアン文字 */
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    border: 1px solid #164E63;
+    margin-bottom: 8px;
+    box-shadow: inset 0 0 8px rgba(34, 211, 238, 0.2);
+}

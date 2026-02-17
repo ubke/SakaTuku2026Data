@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SakaTsuku 2026 - Player Manager</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1E3A8A">
+</head>
+<body>
+
+    <header>
+        MY CLUB - 選手管理
+    </header>
+
+    <div class="team-tabs-wrapper">
+        <div class="team-tabs" id="teamTabsContainer">
+            </div>
+    </div>
+
+    <div class="container">
+        <button class="btn" id="toggleFormBtn">＋ 新しい選手を登録</button>
+
+        <div id="addPlayerForm">
+            <div class="form-group">
+                <label for="pName">選手名</label>
+                <input type="text" id="pName" placeholder="例: 本田圭佑">
+            </div>
+            <div class="form-group">
+                <label>ポジション</label>
+                <div class="custom-select-wrapper" id="posSelectWrapper">
+                    <div class="custom-select-trigger" id="posSelectTrigger">
+                        <span id="posSelectLabel">選択してください</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="custom-options" id="posOptionsList">
+                        </div>
+                </div>
+                <input type="hidden" id="pPos" value="">
+            </div>
+
+            <div class="form-group">
+                <label for="pSkills">個性・特徴（カンマ区切り）</label>
+                <input type="text" id="pSkills" placeholder="例: ドリブル突破, プレースキッカー, 負けず嫌い">
+            </div>
+
+            <div class="form-group">
+                <label>成長フェーズ</label>
+                <div class="phase-group" id="phaseGroup">
+                    <div class="phase-btn" data-phase="成長準備期">成長準備期</div>
+                    <div class="phase-btn" data-phase="成長期">成長期</div>
+                    <div class="phase-btn selected" data-phase="安定期">安定期</div>
+                    <div class="phase-btn" data-phase="円熟期">円熟期</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>ポジション適性マップ（色を選んでタップ）</label>
+                <div class="aptitude-palette" id="colorPalette">
+                    <div class="palette-btn apt-red selected" data-color="red">最適</div>
+                    <div class="palette-btn apt-orange" data-color="orange">適正</div>
+                    <div class="palette-btn apt-yellow" data-color="yellow">可能</div>
+                    <div class="palette-btn apt-none" data-color="none">消去</div>
+                </div>
+                <div class="pitch-grid" id="formPitchGrid">
+                    </div>
+            </div>
+
+            <button class="btn btn-primary" id="savePlayerBtn">保存する</button>
+        </div>
+
+        <div id="playerList">
+            </div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active">📋 選手一覧</div>
+        <div class="nav-item">⚙️ 設定</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+    <script src="data.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
