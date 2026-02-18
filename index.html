@@ -14,12 +14,16 @@
         MY CLUB - 選手管理
     </header>
 
-    <div class="team-tabs-wrapper">
-        <div class="team-tabs" id="teamTabsContainer">
-            </div>
-    </div>
-
     <div class="container">
+        <div class="team-management">
+            <div class="tab-input-group">
+                <input type="text" id="newTeamInput" placeholder="新しいクラブ名を入力">
+                <button id="addTeamBtn" class="btn-tab-add">クラブ追加</button>
+            </div>
+            <div class="team-pills-container" id="teamTabsContainer">
+                </div>
+        </div>
+
         <button class="btn" id="toggleFormBtn">＋ 新しい選手を登録</button>
 
         <div id="addPlayerForm">
@@ -27,6 +31,16 @@
                 <label for="pName">選手名</label>
                 <input type="text" id="pName" placeholder="例: 本田圭佑">
             </div>
+
+            <div class="form-group">
+                <label for="pRating">総合力</label>
+                <div class="rating-input-group">
+                    <button type="button" class="spin-btn" id="btnRatingDown">－</button>
+                    <input type="number" id="pRating" value="4500" min="0">
+                    <button type="button" class="spin-btn" id="btnRatingUp">＋</button>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label>ポジション</label>
                 <div class="custom-select-wrapper" id="posSelectWrapper">
@@ -41,8 +55,16 @@
             </div>
 
             <div class="form-group">
-                <label for="pSkills">個性・特徴（カンマ区切り）</label>
-                <input type="text" id="pSkills" placeholder="例: ドリブル突破, プレースキッカー, 負けず嫌い">
+                <label>ポジション適性マップ（色を選んでタップ）</label>
+                <div class="aptitude-palette">
+                    <div class="palette-btn apt-red selected" data-color="red">最適</div>
+                    <div class="palette-btn apt-orange" data-color="orange">可能</div>
+                    <div class="palette-btn apt-yellow" data-color="yellow">弱め</div>
+                    <div class="palette-btn apt-none" data-color="none">無理</div>
+                </div>
+                
+                <div class="pitch-grid" id="formPitchGrid">
+                    </div>
             </div>
 
             <div class="form-group">
@@ -56,27 +78,57 @@
             </div>
 
             <div class="form-group">
-                <label>ポジション適性マップ（色を選んでタップ）</label>
-                <div class="aptitude-palette" id="colorPalette">
-                    <div class="palette-btn apt-red selected" data-color="red">最適</div>
-                    <div class="palette-btn apt-orange" data-color="orange">適正</div>
-                    <div class="palette-btn apt-yellow" data-color="yellow">可能</div>
-                    <div class="palette-btn apt-none" data-color="none">消去</div>
+                <label>アビリティ発動条件（複数選択可）</label>
+                <div class="ability-condition-group" id="abilityConditionGroup">
+                    <div class="ability-btn" data-cond="HOME">HOME</div>
+                    <div class="ability-btn" data-cond="AWAY">AWAY</div>
+                    <div class="ability-btn" data-cond="CUP">CUP</div>
+                    
+                    <div class="flex-break"></div>
+
+                    <div class="ability-btn" data-cond="途中出場">途中出場</div>
+                    <div class="ability-btn" data-cond="勝っている">勝っている</div>
+                    <div class="ability-btn" data-cond="負けている">負けている</div>
                 </div>
-                <div class="pitch-grid" id="formPitchGrid">
-                    </div>
             </div>
 
             <button class="btn btn-primary" id="savePlayerBtn">保存する</button>
         </div>
 
+        <div class="filter-panel">
+            <div class="filter-title">▼ 選手を絞り込む</div>
+            
+            <div class="form-group">
+                <label>ポジション適性（サブポジ含む）</label>
+                <div class="custom-select-wrapper" id="filterPosSelectWrapper">
+                    <input type="hidden" id="filterPosSelect" value="">
+                    
+                    <div class="custom-select-trigger" id="filterPosSelectTrigger" style="background-color: rgba(31, 41, 55, 0.9); color: white;">
+                        <span id="filterPosSelectLabel">すべて表示</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                    
+                    <div class="custom-options" id="filterPosOptionsList">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>アビリティ発動条件（複数選択可）</label>
+                <div class="ability-condition-group">
+                    <div class="filter-ability-btn" data-cond="HOME">HOME</div>
+                    <div class="filter-ability-btn" data-cond="AWAY">AWAY</div>
+                    <div class="filter-ability-btn" data-cond="CUP">CUP</div>
+                    <div class="flex-break"></div>
+                    <div class="filter-ability-btn" data-cond="途中出場">途中出場</div>
+                    <div class="filter-ability-btn" data-cond="勝っている">勝っている</div>
+                    <div class="filter-ability-btn" data-cond="負けている">負けている</div>
+                </div>
+            </div>
+        </div>
+
         <div id="playerList">
             </div>
-    </div>
-
-    <div class="bottom-nav">
-        <div class="nav-item active">📋 選手一覧</div>
-        <div class="nav-item">⚙️ 設定</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
