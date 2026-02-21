@@ -395,20 +395,35 @@ function toggleForm(forceClose = false) {
     
     if (!form || !btn) return;
     
-    // 常にフォームを元の位置（一番上の「＋選手を登録」ボタンのすぐ下）に戻す
     btn.insertAdjacentElement('afterend', form);
-    
-    // フォームが現在「新規登録モード」で開いているかどうかを確実に判定
     const isAlreadyOpenAsNew = (form.style.display === 'block' && editingPlayerId === null);
 
     if (isForceClose || isAlreadyOpenAsNew) {
-        // ▼ 閉じる時の処理（強制終了、または既に新規で開いている時に押された場合）
+        // ▼ 閉じる時の処理
+        const savedEditId = editingPlayerId; // ★ ここで「どの選手を編集していたか」を記憶する
+
         form.style.display = 'none';
         btn.textContent = `＋ ${currentTeam} に選手を登録`;
         btn.classList.remove('btn-cancel');
         
         document.querySelectorAll('.player-card').forEach(c => c.style.opacity = '1');
         editingPlayerId = null;
+
+        // ★ 保存時・キャンセル時共通のスクロール処理
+        setTimeout(() => {
+            if (savedEditId) {
+                // 編集だった場合：その選手のカードへ戻る
+                const card = document.getElementById(`player-card-${savedEditId}`);
+                if (card) {
+                    const y = card.getBoundingClientRect().top + window.pageYOffset - 100;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                }
+            } else {
+                // 新規登録だった場合：一番上へ戻る
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }, 50);
+
     } else {
         // ▼ 新規登録として開く時の処理
         form.style.display = 'block';
@@ -421,10 +436,9 @@ function toggleForm(forceClose = false) {
         document.querySelectorAll('.player-card').forEach(c => c.style.opacity = '1');
         editingPlayerId = null;
 
-        // フォームの入力値をリセット
+        // フォームのリセット
         const pName = document.getElementById('pName');
         if (pName) pName.value = '';
-        
         const pRating = document.getElementById('pRating');
         if (pRating) pRating.value = '4500';
 
@@ -446,6 +460,10 @@ function toggleForm(forceClose = false) {
         currentPhase = '安定期';
 
         document.querySelectorAll('.ability-btn').forEach(b => b.classList.remove('selected'));
+        
+        // 新規登録時は「相性エリア」を隠す
+        const chemistryGroup = document.getElementById('chemistryGroup');
+        if (chemistryGroup) chemistryGroup.style.display = 'none';
     }
 }
 
@@ -510,6 +528,40 @@ function editPlayer(id) {
             if (btn) btn.classList.add('selected');
         });
     }
+
+    // 相性の良い選手リストを自動生成して表示する
+    const chemistryGroup = document.getElementById('chemistryGroup');
+    const chemistryList = document.getElementById('chemistryList');
+    if (chemistryGroup && chemistryList) {
+        chemistryGroup.style.display = 'block'; // 編集時のみ表示
+        chemistryList.innerHTML = '';
+
+        // 同じチームの「自分以外」の選手を抽出
+        const teammates = players.filter(p => p.team === currentTeam && p.id !== id);
+
+        if (teammates.length === 0) {
+            chemistryList.innerHTML = '<div style="font-size: 0.9rem; color: #9CA3AF;">同じクラブに他の選手がいません。</div>';
+        } else {
+            teammates.forEach(tm => {
+                const btn = document.createElement('div');
+                btn.className = 'chemistry-btn';
+                btn.textContent = tm.name; // チームメイトの名前
+                btn.dataset.id = tm.id;    // チームメイトのIDを裏側に持たせる
+                
+                // 既に相性が良いとして登録されていれば、色を光らせる
+                if (player.chemistry && player.chemistry.includes(tm.id)) {
+                    btn.classList.add('selected');
+                }
+
+                // クリックでON/OFF
+                btn.addEventListener('click', () => {
+                    btn.classList.toggle('selected');
+                });
+
+                chemistryList.appendChild(btn);
+            });
+        }
+    }
 }
 
 // 選手の追加・更新と保存
@@ -535,19 +587,54 @@ function addPlayer() {
         abilities.push(btn.dataset.cond);
     });
 
+    // 編集モードの場合、選択された相性の良い選手のIDを集める
+    let newChemistry = [];
     if (editingPlayerId) {
-        // ★ 更新モード（既存のデータを上書き）
+        document.querySelectorAll('.chemistry-btn.selected').forEach(btn => {
+            newChemistry.push(parseInt(btn.dataset.id, 10));
+        });
+    }
+
+    // ★修正：既存の if (editingPlayerId) { ... } の中身を以下に差し替え
+    if (editingPlayerId) {
+        // ★ 更新モード
         const playerIndex = players.findIndex(p => p.id === editingPlayerId);
         if (playerIndex !== -1) {
-            players[playerIndex].name = name;
-            players[playerIndex].rating = rating ? parseInt(rating, 10) : 0;
-            players[playerIndex].position = pos;
-            players[playerIndex].aptitudes = aptitudes;
-            players[playerIndex].phase = currentPhase;
-            players[playerIndex].abilities = abilities;
+            const p = players[playerIndex];
+            p.name = name;
+            p.rating = rating ? parseInt(rating, 10) : 0;
+            p.position = pos;
+            p.aptitudes = aptitudes;
+            p.phase = currentPhase;
+            p.abilities = abilities;
+            
+            // ▼ プロの技：双方向リンクの自動更新処理
+            const oldChemistry = p.chemistry || [];
+            p.chemistry = newChemistry;
+
+            // 1. 新しく相性に選ばれた相手のデータにも、自分を自動追加する
+            const addedIds = newChemistry.filter(id => !oldChemistry.includes(id));
+            addedIds.forEach(targetId => {
+                const target = players.find(t => t.id === targetId);
+                if (target) {
+                    if (!target.chemistry) target.chemistry = [];
+                    if (!target.chemistry.includes(editingPlayerId)) {
+                        target.chemistry.push(editingPlayerId);
+                    }
+                }
+            });
+
+            // 2. 相性から外された（チェックを消した）相手のデータから、自分を自動削除する
+            const removedIds = oldChemistry.filter(id => !newChemistry.includes(id));
+            removedIds.forEach(targetId => {
+                const target = players.find(t => t.id === targetId);
+                if (target && target.chemistry) {
+                    target.chemistry = target.chemistry.filter(id => id !== editingPlayerId);
+                }
+            });
         }
     } else {
-        // ★ 新規追加モード
+        // ★ 新規追加モード（この中身も差し替えてください）
         const newPlayer = {
             id: Date.now(),
             name: name,
@@ -556,28 +643,28 @@ function addPlayer() {
             aptitudes: aptitudes,
             phase: currentPhase,
             abilities: abilities,
-            team: currentTeam 
+            team: currentTeam,
+            chemistry: [] // ★追加：新規登録時は空の相性リストを持たせる
         };
         players.push(newPlayer);
     }
 
     localStorage.setItem('sakatsuku_players', JSON.stringify(players));
     
-    // 保存後はフォームを確実に閉じて上に戻す
+    // スクロール処理は toggleForm 内で自動的に行われるため、呼び出すだけでOK
     toggleForm(true); 
     renderPlayers();
-
-    // スマホの中途半端なスクロールバグを防ぎ、一番上（登録ボタンの位置）へ滑らかに戻す
-    setTimeout(() => {
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    }, 50); // 画面の表示が切り替わるのを一瞬だけ待ってからスクロールさせる（プロの小技です）
 }
 
 window.deletePlayer = function(id) {
     if(confirm('この選手を削除しますか？')) {
+        // ★追加：他の選手の相性リストから、この削除される選手の存在を完全に消し去る
+        players.forEach(p => {
+            if (p.chemistry) {
+                p.chemistry = p.chemistry.filter(cid => cid !== id);
+            }
+        });
+        
         players = players.filter(p => p.id !== id);
         localStorage.setItem('sakatsuku_players', JSON.stringify(players));
         renderPlayers();
@@ -695,6 +782,21 @@ function renderPlayers() {
             ? `<div class="ability-tags">${player.abilities.map(a => `<span class="ability-tag">${a}</span>`).join('')}</div>`
             : '';
 
+        // 相性の良い選手の名前を抽出して表示するHTML
+        let chemistryHtml = '';
+        if (player.chemistry && player.chemistry.length > 0) {
+            const chemNames = player.chemistry.map(id => {
+                const target = players.find(p => p.id === id);
+                return target ? target.name : null;
+            }).filter(name => name !== null);
+
+            if (chemNames.length > 0) {
+                chemistryHtml = `<div style="margin-top: 8px; font-size: 0.85rem; color: rgba(255,255,255,0.8); background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 6px; border-left: 3px solid var(--accent-cyan);">
+                    <span style="color: var(--accent-cyan); font-weight: bold;">連携：</span> ${chemNames.join('、')}
+                </div>`;
+            }
+        }
+
         const card = document.createElement('div');
         card.className = 'player-card';
         card.id = `player-card-${player.id}`; // カードに固有の目印をつける
@@ -713,6 +815,7 @@ function renderPlayers() {
                         <span class="player-phase" data-phase="${phaseName}">${phaseName}</span>
                     </div>
                     ${abilitiesHtml}
+                    ${chemistryHtml}
                 </div>
                 ${miniMapHtml}
             </div>
@@ -742,3 +845,22 @@ document.addEventListener('touchmove', (e) => {
         e.preventDefault();
     }
 }, { passive: false });
+
+// =========================================
+// 編集中に、元のカード（薄くなっている部分）をタップしてキャンセルする機能
+// =========================================
+document.addEventListener('click', (e) => {
+    // 1. 誰も編集していなければ何もしない
+    if (!editingPlayerId) return;
+
+    // 2. 「編集」や「削除」などのボタンを押した時は無視する
+    if (e.target.closest('button')) return;
+
+    // 3. 今編集で薄くなっているカード本体を取得
+    const editingCard = document.getElementById(`player-card-${editingPlayerId}`);
+    
+    // 4. タップした場所が、まさに「その薄くなっているカード」の中だった場合
+    if (editingCard && editingCard.contains(e.target)) {
+        toggleForm(true); // キャンセルボタンを押した時と同じ処理（閉じて戻る）を発動！
+    }
+});
