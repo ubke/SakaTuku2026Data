@@ -13,19 +13,31 @@
 
 body {
     font-family: 'Helvetica Neue', Arial, sans-serif;
-    background-image: url('bg.png'); 
-    background-size: cover;          
-    background-position: center;     
-    background-repeat: no-repeat;    
-    background-attachment: fixed;    
-    background-color: var(--bg-color);
     color: var(--text-main); 
     margin: 0;
     padding: 0;
     padding-bottom: 20px;
-
     /* ダブルタップズームを完全に無効化し、連打を可能にする */
     touch-action: manipulation;
+}
+
+/* iPhoneの背景巨大化バグを防ぐ「魔法の背景レイヤー」 */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw; /* 画面幅にピタッと合わせる */
+    height: 100vh; /* 画面の高さにピタッと合わせる */
+    
+    /* 背景画像の設定をここに隔離する */
+    background-image: url('bg.png'); 
+    background-size: cover;          
+    background-position: center;     
+    background-repeat: no-repeat;    
+    background-color: var(--bg-color);
+    
+    z-index: -100; /* 全ての要素の一番奥（マイナス100階層）に配置する */
 }
 
 /* ヘッダー（サイバー・グラスモーフィズム仕様） */
@@ -524,6 +536,12 @@ input[type="number"] {
     margin-bottom: 5px;
 }
 
+.phase-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 均等な幅で2列にする魔法 */
+    gap: 10px; /* ボタン同士の隙間（縦・横すべて） */
+}
+
 .phase-btn {
     flex: 1;
     min-width: calc(50% - 4px); 
@@ -537,6 +555,9 @@ input[type="number"] {
     border: 2px solid var(--border-color);
     cursor: pointer;
     transition: all 0.2s;
+    margin-bottom: 0 !important; 
+    width: 100%; /* グリッドのマス目にピタッと合わせる */
+    box-sizing: border-box;
 }
 
 @media (min-width: 480px) {

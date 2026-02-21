@@ -566,6 +566,14 @@ function addPlayer() {
     // 保存後はフォームを確実に閉じて上に戻す
     toggleForm(true); 
     renderPlayers();
+
+    // スマホの中途半端なスクロールバグを防ぎ、一番上（登録ボタンの位置）へ滑らかに戻す
+    setTimeout(() => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }, 50); // 画面の表示が切り替わるのを一瞬だけ待ってからスクロールさせる（プロの小技です）
 }
 
 window.deletePlayer = function(id) {
