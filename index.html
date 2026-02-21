@@ -2,17 +2,15 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SakaTsuku 2026 - Player Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>プロサッカークラブをみちびこう！</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1E3A8A">
 </head>
 <body>
 
-    <header>
-        MY CLUB - 選手管理
-    </header>
+    <header>プロサッカークラブをみちびこう！</header>
 
     <div class="container">
         <div class="team-management">
@@ -92,7 +90,10 @@
                 </div>
             </div>
 
-            <button class="btn btn-primary" id="savePlayerBtn">保存する</button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" id="cancelFormBtn" style="background: #4B5563; flex: 1; margin-bottom: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">キャンセル</button>
+                <button class="btn" id="savePlayerBtn" style="flex: 2; margin-bottom: 0;">保存する</button>
+            </div>
         </div>
 
         <div class="filter-panel">

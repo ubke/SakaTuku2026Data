@@ -10,6 +10,9 @@ let currentPhase = '安定期';
 let sortableInstance = null;
 let teamSortableInstance = null; // チームタブ用のSortableJS管理変数
 
+// 現在編集中の選手のIDを記憶する変数
+let editingPlayerId = null;
+
 const PITCH_POSITIONS = [
     'LW', 'CF', 'RW',
     'LM', 'AM', 'RM',
@@ -29,60 +32,67 @@ document.addEventListener('DOMContentLoaded', () => {
     initPhases();
     renderPlayers();
 
-    // 2.クラブ追加機能を復活
+    // 2. クラブ追加機能を復活
     const addTeamBtn = document.querySelector('.btn-tab-add');
     const newTeamInput = document.querySelector('.tab-input-group input');
-
     if (addTeamBtn && newTeamInput) {
-        addTeamBtn.addEventListener('click', () => {
+        addTeamBtn.onclick = () => {
             const teamName = newTeamInput.value.trim();
             if (teamName !== '') {
-                // まだ存在しないチーム名なら追加して保存
                 if (!teams.includes(teamName)) {
                     teams.push(teamName);
-                    localStorage.setItem('sakatsuku_teams', JSON.stringify(teams)); // ※キーは環境に合わせてください
+                    localStorage.setItem('sakatsuku_teams', JSON.stringify(teams));
                 }
-                currentTeam = teamName;   // 今作ったチームを選択状態にする
-                newTeamInput.value = '';  // 入力欄を空に戻す
-                initTabs();               // チームのタブ一覧を再描画
-                renderPlayers();          // 選手リストを切り替え
+                currentTeam = teamName;
+                newTeamInput.value = '';
+                initTabs();
+                renderPlayers();
             }
-        });
+        };
     }
 
-    // 3. フォーム開閉と保存ボタン
-    document.getElementById('toggleFormBtn').addEventListener('click', toggleForm);
-    document.getElementById('savePlayerBtn').addEventListener('click', addPlayer);
+    // 3. フォーム開閉と保存ボタン（エラー回避＆二重起動防止）
+    const toggleBtn = document.getElementById('toggleFormBtn');
+    if (toggleBtn) toggleBtn.onclick = () => toggleForm(false);
+    
+    const saveBtn = document.getElementById('savePlayerBtn');
+    if (saveBtn) saveBtn.onclick = addPlayer;
+    
+    const cancelBtn = document.getElementById('cancelFormBtn');
+    if (cancelBtn) cancelBtn.onclick = () => toggleForm(true);
 
-    // 4. 総合力の「＋」ボタン処理（500刻みで切り上げ）
-    document.getElementById('btnRatingUp').addEventListener('click', () => {
-        const input = document.getElementById('pRating');
-        let val = parseInt(input.value) || 0;
-        input.value = Math.ceil((val + 1) / 500) * 500;
-    });
+    // 4. 総合力の「＋」ボタン処理
+    const upBtn = document.getElementById('btnRatingUp');
+    if (upBtn) {
+        upBtn.onclick = () => {
+            const input = document.getElementById('pRating');
+            let val = parseInt(input.value) || 0;
+            input.value = Math.ceil((val + 1) / 500) * 500;
+        };
+    }
 
-    // 5. 総合力の「ー」ボタン処理（500刻みで切り下げ）
-    document.getElementById('btnRatingDown').addEventListener('click', () => {
-        const input = document.getElementById('pRating');
-        let val = parseInt(input.value) || 0;
-        let newVal = Math.floor((val - 1) / 500) * 500;
-        if (newVal < 0) newVal = 0;
-        input.value = newVal;
-    });
+    // 5. 総合力の「ー」ボタン処理
+    const downBtn = document.getElementById('btnRatingDown');
+    if (downBtn) {
+        downBtn.onclick = () => {
+            const input = document.getElementById('pRating');
+            let val = parseInt(input.value) || 0;
+            let newVal = Math.floor((val - 1) / 500) * 500;
+            input.value = newVal < 0 ? 0 : newVal;
+        };
+    }
 
-    // 6. 【選手登録用】のアビリティ発動条件ボタンのON/OFF
+    // 6. 【選手登録用】のアビリティ発動条件ボタン
     document.querySelectorAll('.ability-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            btn.classList.toggle('selected');
-        });
+        btn.onclick = () => btn.classList.toggle('selected');
     });
 
-    // 7. 【絞り込み用】のアビリティ発動条件ボタンのON/OFF ＆ 絞り込み実行
+    // 7. 【絞り込み用】のアビリティ発動条件ボタン
     document.querySelectorAll('.filter-ability-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.onclick = () => {
             btn.classList.toggle('selected');
-            renderPlayers(); // クリックした瞬間にリストを更新する
-        });
+            renderPlayers();
+        };
     });
 });
 
@@ -104,6 +114,14 @@ function migrateOldData() {
 function initTabs() {
     const container = document.getElementById('teamTabsContainer');
     container.innerHTML = '';
+
+    // タブが再描画されるタイミングで、登録ボタンのクラブ名も更新する！
+    const toggleBtn = document.getElementById('toggleFormBtn');
+    const form = document.getElementById('addPlayerForm');
+    // フォームが閉じている（「× キャンセル」になっていない）時だけ文字を更新
+    if (toggleBtn && (!form || form.style.display === 'none' || form.style.display === '')) {
+        toggleBtn.textContent = `＋ ${currentTeam} に選手を登録`;
+    }
 
     teams.forEach(team => {
         const tab = document.createElement('div');
@@ -369,50 +387,134 @@ function initPhases() {
     });
 }
 
-function toggleForm() {
+// フォームの表示/非表示
+function toggleForm(forceClose = false) {
+    const isForceClose = forceClose === true;
     const form = document.getElementById('addPlayerForm');
     const btn = document.getElementById('toggleFormBtn');
     
-    if (form.style.display === 'none' || form.style.display === '') {
+    if (!form || !btn) return;
+    
+    // 常にフォームを元の位置（一番上の「＋選手を登録」ボタンのすぐ下）に戻す
+    btn.insertAdjacentElement('afterend', form);
+    
+    // フォームが現在「新規登録モード」で開いているかどうかを確実に判定
+    const isAlreadyOpenAsNew = (form.style.display === 'block' && editingPlayerId === null);
+
+    if (isForceClose || isAlreadyOpenAsNew) {
+        // ▼ 閉じる時の処理（強制終了、または既に新規で開いている時に押された場合）
+        form.style.display = 'none';
+        btn.textContent = `＋ ${currentTeam} に選手を登録`;
+        btn.classList.remove('btn-cancel');
+        
+        document.querySelectorAll('.player-card').forEach(c => c.style.opacity = '1');
+        editingPlayerId = null;
+    } else {
+        // ▼ 新規登録として開く時の処理
         form.style.display = 'block';
         btn.textContent = '× キャンセル';
-        btn.style.backgroundColor = '#EF4444';
-        btn.style.boxShadow = '0 4px 0 #B91C1C';
+        btn.classList.add('btn-cancel');
+        
+        const saveBtn = document.getElementById('savePlayerBtn');
+        if (saveBtn) saveBtn.textContent = '保存する';
+        
+        document.querySelectorAll('.player-card').forEach(c => c.style.opacity = '1');
+        editingPlayerId = null;
 
-        // パレットの選択状態を「最適（赤）」にリセットする
+        // フォームの入力値をリセット
+        const pName = document.getElementById('pName');
+        if (pName) pName.value = '';
+        
+        const pRating = document.getElementById('pRating');
+        if (pRating) pRating.value = '4500';
+
         document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('selected'));
-        document.querySelector('.palette-btn[data-color="red"]').classList.add('selected');
+        const defaultPalette = document.querySelector('.palette-btn[data-color="red"]');
+        if (defaultPalette) defaultPalette.classList.add('selected');
         currentPaintColor = 'red';
 
-        // 開いた瞬間に、選択中のポジションをマップに反映させる処理
-        // 1. まずマップを完全にリセットして真っさらにする
-        document.querySelectorAll('#formPitchGrid .pitch-cell').forEach(c => {
-            c.removeAttribute('data-apt');
-        });
-
-        // 2. 現在ドロップダウンで選択されているポジションの値（CFなど）を取得
-        // （カスタムドロップダウンの裏にある隠しinput要素から値を取ります）
-        const currentPosId = document.getElementById('pPos').value;
-
-        // 3. そのポジションに対応するマップ上のマスを探して「赤（最適）」に塗る
-        if (currentPosId) {
-            const cell = document.querySelector(`.pitch-cell[data-pos="${currentPosId}"]`);
-            if (cell) {
-                cell.setAttribute('data-apt', 'red');
-            }
+        document.querySelectorAll('#formPitchGrid .pitch-cell').forEach(c => c.removeAttribute('data-apt'));
+        const pPos = document.getElementById('pPos');
+        if (pPos && pPos.value) {
+            const cell = document.querySelector(`.pitch-cell[data-pos="${pPos.value}"]`);
+            if (cell) cell.setAttribute('data-apt', 'red');
         }
 
-    } else {
-        form.style.display = 'none';
-        btn.textContent = `＋ ${currentTeam} に選手を登録`; // ★ボタンのテキストも変更
-        btn.style.backgroundColor = 'var(--accent-cyan)';
-        btn.style.boxShadow = '0 4px 0 #0891B2';
+        document.querySelectorAll('.phase-btn').forEach(b => b.classList.remove('selected'));
+        const defaultPhase = document.querySelector('.phase-btn[data-phase="安定期"]');
+        if (defaultPhase) defaultPhase.classList.add('selected');
+        currentPhase = '安定期';
+
+        document.querySelectorAll('.ability-btn').forEach(b => b.classList.remove('selected'));
     }
 }
 
-// 選手の保存処理
+// 選手を編集モードで開く
+function editPlayer(id) {
+    const player = players.find(p => p.id === id);
+    if (!player) return;
+
+    editingPlayerId = id;
+    const form = document.getElementById('addPlayerForm');
+    const card = document.getElementById(`player-card-${id}`);
+
+    // ★フォームを、対象の選手カードのすぐ下に瞬間移動させる！
+    card.insertAdjacentElement('afterend', form);
+    form.style.display = 'block';
+
+    // UIの切り替え
+    document.getElementById('savePlayerBtn').textContent = '更新する';
+    const topBtn = document.getElementById('toggleFormBtn');
+    topBtn.textContent = `＋ ${currentTeam} に選手を登録`;
+    topBtn.classList.remove('btn-cancel');
+
+    // 編集中のカード以外を少し暗くして分かりやすくする
+    document.querySelectorAll('.player-card').forEach(c => c.style.opacity = '1');
+    card.style.opacity = '0.4';
+
+    // データのセット
+    document.getElementById('pName').value = player.name;
+    document.getElementById('pRating').value = player.rating || 0;
+    
+    document.getElementById('pPos').value = player.position;
+    const posData = GAME_DATA.positions.find(p => p.id === player.position);
+    if (posData) {
+        const trigger = document.querySelectorAll('.custom-select-trigger')[0]; 
+        if (trigger) {
+            const label = trigger.querySelector('span:first-child') || trigger;
+            label.textContent = posData.name ? `${posData.id}（${posData.name}）` : posData.id;
+            trigger.style.backgroundColor = posData.color;
+            trigger.style.color = 'white';
+        }
+    }
+
+    document.querySelectorAll('#formPitchGrid .pitch-cell').forEach(c => c.removeAttribute('data-apt'));
+    if (player.aptitudes) {
+        Object.keys(player.aptitudes).forEach(pos => {
+            const cell = document.querySelector(`#formPitchGrid .pitch-cell[data-pos="${pos}"]`);
+            if (cell) cell.setAttribute('data-apt', player.aptitudes[pos]);
+        });
+    }
+
+    document.querySelectorAll('.phase-btn').forEach(b => b.classList.remove('selected'));
+    if (player.phase) {
+        const phaseBtn = document.querySelector(`.phase-btn[data-phase="${player.phase}"]`);
+        if (phaseBtn) phaseBtn.classList.add('selected');
+        currentPhase = player.phase;
+    }
+
+    document.querySelectorAll('.ability-btn').forEach(b => b.classList.remove('selected'));
+    if (player.abilities) {
+        player.abilities.forEach(cond => {
+            const btn = document.querySelector(`.ability-btn[data-cond="${cond}"]`);
+            if (btn) btn.classList.add('selected');
+        });
+    }
+}
+
+// 選手の追加・更新と保存
 function addPlayer() {
-    const name = document.getElementById('pName').value;
+    const name = document.getElementById('pName').value.trim();
     const rating = document.getElementById('pRating').value;
     const pos = document.getElementById('pPos').value;
 
@@ -428,39 +530,41 @@ function addPlayer() {
         }
     });
 
-    // 選択されているアビリティを取得して配列にする
     const abilities = [];
     document.querySelectorAll('.ability-btn.selected').forEach(btn => {
         abilities.push(btn.dataset.cond);
     });
 
-    const newPlayer = {
-        id: Date.now(),
-        name: name,
-        rating: rating ? parseInt(rating, 10) : 0,
-        position: pos,
-        aptitudes: aptitudes,
-        phase: currentPhase,
-        abilities: abilities,
-        team: currentTeam 
-    };
+    if (editingPlayerId) {
+        // ★ 更新モード（既存のデータを上書き）
+        const playerIndex = players.findIndex(p => p.id === editingPlayerId);
+        if (playerIndex !== -1) {
+            players[playerIndex].name = name;
+            players[playerIndex].rating = rating ? parseInt(rating, 10) : 0;
+            players[playerIndex].position = pos;
+            players[playerIndex].aptitudes = aptitudes;
+            players[playerIndex].phase = currentPhase;
+            players[playerIndex].abilities = abilities;
+        }
+    } else {
+        // ★ 新規追加モード
+        const newPlayer = {
+            id: Date.now(),
+            name: name,
+            rating: rating ? parseInt(rating, 10) : 0,
+            position: pos,
+            aptitudes: aptitudes,
+            phase: currentPhase,
+            abilities: abilities,
+            team: currentTeam 
+        };
+        players.push(newPlayer);
+    }
 
-    players.push(newPlayer);
     localStorage.setItem('sakatsuku_players', JSON.stringify(players));
     
-    // フォームリセット
-    document.getElementById('pName').value = '';
-    document.getElementById('pRating').value = '4500';
-    document.querySelectorAll('#formPitchGrid .pitch-cell').forEach(c => c.removeAttribute('data-apt'));
-    
-    document.querySelectorAll('.phase-btn').forEach(b => b.classList.remove('selected'));
-    document.querySelector('.phase-btn[data-phase="安定期"]').classList.add('selected');
-    currentPhase = '安定期';
-
-    // アビリティの選択状態をすべてリセット
-    document.querySelectorAll('.ability-btn').forEach(b => b.classList.remove('selected'));
-
-    toggleForm();
+    // 保存後はフォームを確実に閉じて上に戻す
+    toggleForm(true); 
     renderPlayers();
 }
 
@@ -475,6 +579,13 @@ window.deletePlayer = function(id) {
 // 選手リストの描画（絞り込み＆ソート機能付き）
 function renderPlayers() {
     const list = document.getElementById('playerList');
+
+    // リストを消す前に、フォームがリスト内にあれば安全な場所（上部）に退避させる
+    const form = document.getElementById('addPlayerForm');
+    if (list.contains(form)) {
+        toggleForm(true); // フォームを閉じて上に戻す
+    }
+
     list.innerHTML = '';
 
     const teamPlayers = players.filter(player => player.team === currentTeam);
@@ -578,6 +689,7 @@ function renderPlayers() {
 
         const card = document.createElement('div');
         card.className = 'player-card';
+        card.id = `player-card-${player.id}`; // カードに固有の目印をつける
 
         card.innerHTML = `
             <div class="card-header">
@@ -596,10 +708,29 @@ function renderPlayers() {
                 </div>
                 ${miniMapHtml}
             </div>
-            <div style="text-align: right; margin-top: 10px;">
-                <button onclick="deletePlayer(${player.id})" style="background: none; border: none; color: #EF4444; cursor: pointer; font-size: 0.9rem; font-weight: bold;">削除</button>
+
+            <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 10px;">
+                <button onclick="editPlayer(${player.id})" style="background: none; border: none; color: var(--accent-cyan); cursor: pointer; font-size: 0.95rem; font-weight: bold;">編集</button>
+                <button onclick="deletePlayer(${player.id})" style="background: none; border: none; color: rgba(239, 68, 68, 0.8); cursor: pointer; font-size: 0.95rem; font-weight: bold;">削除</button>
             </div>
         `;
         list.appendChild(card);
     });
 }
+
+// =========================================
+// スマホ（iOS）特有のピンチズームを完全に無効化する処理
+// =========================================
+document.addEventListener('touchstart', (e) => {
+    // 2本指以上でタッチされたら、その動作を無効化する
+    if (e.touches.length > 1) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+document.addEventListener('touchmove', (e) => {
+    // 2本指以上でなぞられたら（ピンチイン・アウト）、その動作を無効化する
+    if (e.touches.length > 1) {
+        e.preventDefault();
+    }
+}, { passive: false });
