@@ -820,24 +820,84 @@ input[type="number"] {
 }
 
 /* =========================================
-   相性の良い選手（連携）ボタン
+   相性の良い選手（ドロップダウン＆スマートタグUI）
    ========================================= */
-.chemistry-btn {
-    background-color: rgba(31, 41, 55, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20px;
-    padding: 6px 14px;
-    font-size: 0.85rem;
-    font-weight: bold;
-    color: rgba(255, 255, 255, 0.7);
+/* リスト内の選択肢 */
+.chemistry-option {
+    padding: 12px 15px;
+    font-size: 0.95rem;
+    color: white;
+    background-color: rgba(31, 41, 55, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     cursor: pointer;
-    user-select: none;
-    transition: all 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+}
+.chemistry-option:last-child {
+    border-bottom: none;
+}
+.chemistry-option.selected {
+    background-color: rgba(6, 182, 212, 0.2);
+    color: var(--accent-cyan);
+    font-weight: bold;
+}
+/* リスト右側の ＋ と ✓ マーク */
+.chemistry-option::after {
+    content: "＋";
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 1.1rem;
+}
+.chemistry-option.selected::after {
+    content: "✓";
+    color: var(--accent-cyan);
+    font-weight: bold;
 }
 
-.chemistry-btn.selected {
+/* 選択された選手のタグ（チップ） */
+.chem-tag {
     background-color: rgba(6, 182, 212, 0.15);
-    border-color: rgba(6, 182, 212, 0.8);
+    border: 1px solid rgba(6, 182, 212, 0.6);
     color: var(--accent-cyan);
-    box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+    animation: fadeIn 0.2s ease-out; /* フワッと現れるアニメーション */
+}
+/* タグの ✕ ボタン */
+.chem-tag-close {
+    cursor: pointer;
+    background: rgba(6, 182, 212, 0.2);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--accent-cyan);
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ドロップダウン内のポジションバッジ */
+.chem-pos-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: white;
+    min-width: 26px;
+    text-align: center;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
 }

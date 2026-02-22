@@ -94,6 +94,20 @@ document.addEventListener('DOMContentLoaded', () => {
             renderPlayers();
         };
     });
+
+    // 相性ドロップダウンの開閉処理
+    const chemTrigger = document.getElementById('chemSelectTrigger');
+    const chemWrapper = document.getElementById('chemSelectWrapper');
+    if (chemTrigger && chemWrapper) {
+        chemTrigger.addEventListener('click', (e) => {
+            chemWrapper.classList.toggle('open');
+            e.stopPropagation();
+        });
+        // 外側をクリックしたら閉じる
+        document.addEventListener('click', (e) => {
+            if (!chemWrapper.contains(e.target)) chemWrapper.classList.remove('open');
+        });
+    }
 });
 
 // 過去に保存した選手（チーム未所属）を「初期チーム」に割り当てる処理
@@ -532,34 +546,89 @@ function editPlayer(id) {
     // 相性の良い選手リストを自動生成して表示する
     const chemistryGroup = document.getElementById('chemistryGroup');
     const chemistryList = document.getElementById('chemistryList');
-    if (chemistryGroup && chemistryList) {
-        chemistryGroup.style.display = 'block'; // 編集時のみ表示
+    const chemTagsArea = document.getElementById('chemTagsArea');
+    
+    if (chemistryGroup && chemistryList && chemTagsArea) {
+        chemistryGroup.style.display = 'block';
         chemistryList.innerHTML = '';
+        chemTagsArea.innerHTML = '';
 
-        // 同じチームの「自分以外」の選手を抽出
         const teammates = players.filter(p => p.team === currentTeam && p.id !== id);
 
+        // ★追加：普段のリストと同じ「ポジション順 → 総合力順」に並び替える
+        teammates.sort((a, b) => {
+            const posIndexA = GAME_DATA.positions.findIndex(p => p.id === a.position);
+            const posIndexB = GAME_DATA.positions.findIndex(p => p.id === b.position);
+            const sortPosA = posIndexA !== -1 ? posIndexA : 99;
+            const sortPosB = posIndexB !== -1 ? posIndexB : 99;
+
+            if (sortPosA !== sortPosB) {
+                return sortPosA - sortPosB;
+            }
+            const ratingA = a.rating || 0;
+            const ratingB = b.rating || 0;
+            return ratingB - ratingA;
+        });
+
         if (teammates.length === 0) {
-            chemistryList.innerHTML = '<div style="font-size: 0.9rem; color: #9CA3AF;">同じクラブに他の選手がいません。</div>';
+            chemistryList.innerHTML = '<div style="padding: 12px; font-size: 0.9rem; color: #9CA3AF; text-align: center;">同じクラブに他の選手がいません。</div>';
         } else {
+            const renderChemTags = () => {
+                chemTagsArea.innerHTML = '';
+                document.querySelectorAll('.chemistry-option.selected').forEach(opt => {
+                    const tag = document.createElement('div');
+                    tag.className = 'chem-tag';
+                    
+                    // ★修正：ポジションバッジと名前を抜き出してタグを作る
+                    const posBadge = opt.querySelector('.chem-pos-badge').outerHTML;
+                    const playerName = opt.querySelector('.chem-player-name').textContent;
+                    
+                    tag.innerHTML = `
+                        ${posBadge} <span style="margin-left: 2px;">${playerName}</span>
+                        <span class="chem-tag-close" data-id="${opt.dataset.id}">✕</span>
+                    `;
+                    
+                    tag.querySelector('.chem-tag-close').addEventListener('click', (e) => {
+                        e.stopPropagation(); 
+                        opt.classList.remove('selected');
+                        renderChemTags(); 
+                    });
+                    chemTagsArea.appendChild(tag);
+                });
+            };
+
             teammates.forEach(tm => {
-                const btn = document.createElement('div');
-                btn.className = 'chemistry-btn';
-                btn.textContent = tm.name; // チームメイトの名前
-                btn.dataset.id = tm.id;    // チームメイトのIDを裏側に持たせる
+                const option = document.createElement('div');
+                option.className = 'chemistry-option';
+                option.dataset.id = tm.id;    
+
+                // ★追加：ポジションのデータと色を取得
+                const posData = GAME_DATA.positions.find(p => p.id === tm.position);
+                const posColor = posData ? posData.color : '#9CA3AF'; 
+                const posName = posData ? posData.id : tm.position;
+
+                // ★修正：左側にポジションバッジを表示するHTML構造
+                option.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="chem-pos-badge" style="background-color: ${posColor};">${posName}</span>
+                        <span class="chem-player-name">${tm.name}</span>
+                    </div>
+                `;
                 
-                // 既に相性が良いとして登録されていれば、色を光らせる
                 if (player.chemistry && player.chemistry.includes(tm.id)) {
-                    btn.classList.add('selected');
+                    option.classList.add('selected');
                 }
 
-                // クリックでON/OFF
-                btn.addEventListener('click', () => {
-                    btn.classList.toggle('selected');
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation(); 
+                    option.classList.toggle('selected');
+                    renderChemTags(); 
                 });
 
-                chemistryList.appendChild(btn);
+                chemistryList.appendChild(option);
             });
+
+            renderChemTags();
         }
     }
 }
@@ -590,8 +659,9 @@ function addPlayer() {
     // 編集モードの場合、選択された相性の良い選手のIDを集める
     let newChemistry = [];
     if (editingPlayerId) {
-        document.querySelectorAll('.chemistry-btn.selected').forEach(btn => {
-            newChemistry.push(parseInt(btn.dataset.id, 10));
+        // ★クラス名が .chemistry-option になりました
+        document.querySelectorAll('.chemistry-option.selected').forEach(opt => {
+            newChemistry.push(parseInt(opt.dataset.id, 10));
         });
     }
 
